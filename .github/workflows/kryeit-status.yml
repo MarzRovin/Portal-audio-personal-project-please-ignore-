@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  issues: write
+  contents: write
 
 jobs:
   update-status:
@@ -18,10 +18,17 @@ jobs:
           curl -fL "https://kryeit.com/api/server/status" -o status.json
           cat status.json
 
-      - name: Put status in Issue #1
+      - name: Update status.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue edit 1 \
-            --repo "${{ github.repository }}" \
-            --body "$(cat status.json)"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo
+          cp status.json repo/status.json
+
+          cd repo
+          git add status.json
+          git diff --cached --quiet || git commit -m "Update Kryeit status"
+          git push
